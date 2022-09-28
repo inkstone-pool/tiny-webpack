@@ -4,11 +4,39 @@ import bableParser from '@babel/parser'
 import traverse from '@babel/traverse'
 import ejs from 'ejs'
 import {transformFromAst} from 'babel-core'
+import {jsonLoader}from './jsonLoader.js'
 let id=0
+const webpcakConfig={
+    module:{
+        rules:[
+          {
+            test:/\.json$/,
+            use:[jsonLoader]
+          }
+        ]
+    }
+ 
+}
 function createAsset(filePath){
-    const source=fs.readFileSync(filePath,{
+    let  source=fs.readFileSync(filePath,{
         encoding:'utf-8'
     })
+    // useLoader
+    const loaders=webpcakConfig.module.rules
+    loaders.forEach(({test,use})=>{
+        if(test.test(filePath)){
+            if(Array.isArray(use)){
+                use.reverse().forEach((fn)=>{
+                    source=fn(source)
+                })
+
+            }else{
+                source=use(source)
+            }
+        
+        }
+    })
+    
     const ast=bableParser.parse(source,{
         sourceType:'module'
     })
