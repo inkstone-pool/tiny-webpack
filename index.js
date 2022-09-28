@@ -5,6 +5,8 @@ import traverse from '@babel/traverse'
 import ejs from 'ejs'
 import {transformFromAst} from 'babel-core'
 import {jsonLoader}from './jsonLoader.js'
+import {ChangeOutputPath}from './ChangeOutputPath.js'
+import { SyncHook } from 'tapable'
 let id=0
 const webpcakConfig={
     module:{
@@ -14,8 +16,20 @@ const webpcakConfig={
             use:[jsonLoader]
           }
         ]
-    }
+    },
+    plugins:[
+        new ChangeOutputPath()
+    ]
  
+}
+const hooks={
+    emitFile:new SyncHook(['context'])
+}
+function initPlugins(){
+    const plugins=webpcakConfig.plugins
+    plugins.forEach((plugin)=>{
+        plugin.apply(hooks)
+    })
 }
 function createAsset(filePath){
     let  source=fs.readFileSync(filePath,{
@@ -70,6 +84,7 @@ function createGraph(filePath='./example/main.js'){
     }
     return queue
 }
+initPlugins()
 const graph=createGraph()
 build(graph)
 function build(graph){
@@ -85,5 +100,12 @@ function build(graph){
         }
     })
     const code=ejs.render(template,{data})
-    fs.writeFileSync('./dist/bundle.js',code)
+    let  outputPath='./dist/bundle.js'
+    const context={
+        changeOutputPath(path){
+            outputPath=path
+        }
+    }
+    hooks.emitFile.call(context)
+    fs.writeFileSync(outputPath,code)
 }
