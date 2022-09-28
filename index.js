@@ -28,6 +28,7 @@ const hooks={
 function initPlugins(){
     const plugins=webpcakConfig.plugins
     plugins.forEach((plugin)=>{
+        //用户提供特定的类，框架提供钩子的所有容器，用户提供注册，框架提供触发
         plugin.apply(hooks)
     })
 }
@@ -106,6 +107,7 @@ function build(graph){
             outputPath=path
         }
     }
+    //源码提供特定的方法供外部调用，这里把outputPath放进空对象传给用户也可以修改,但是用户的行为是不可控的，也不够语义化
     hooks.emitFile.call(context)
     fs.writeFileSync(outputPath,code)
 }
